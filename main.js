@@ -40,7 +40,7 @@ function render(tray = mainTray) {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Add new Application',
+      label: 'Add New Application',
       click: () => {
         const result = dialog.showOpenDialog({ properties: ['openDirectory'] });
 
