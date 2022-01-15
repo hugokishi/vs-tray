@@ -1,10 +1,11 @@
-const { resolve, basename } = require('path');
-const {
-  app, Menu, Tray, dialog,
-} = require('electron');
-const { spawn } = require('child_process');
-const fixPath = require('fix-path');
-const { storeCreate } = require('./store');
+const { resolve, basename } = require("path");
+const { app, Menu, Tray, dialog } = require("electron");
+const Separator = require("./layouts/separator");
+const Close = require("./layouts/close");
+const { spawn } = require("child_process");
+const fixPath = require("fix-path");
+const { storeCreate } = require("./store");
+const fs = require("fs");
 
 fixPath();
 const store = storeCreate();
@@ -14,24 +15,26 @@ if (app.dock) {
   app.dock.hide();
 }
 
-
 function render(tray = mainTray) {
-  const allApplications = store.get('applications');
+  const allApplications = store.get("applications");
   const applications = allApplications ? JSON.parse(allApplications) : [];
 
   const items = applications.map(({ name, path }) => ({
     label: name,
     submenu: [
       {
-        label: 'Open Application',
+        label: "Open Application",
         click: () => {
-          spawn('code', [path], { shell: true });
+          spawn("code", [path], { shell: true });
         },
       },
       {
-        label: 'Remove Application',
+        label: "Remove Application",
         click: () => {
-          store.set('applications', JSON.stringify(applications.filter(item => item.path !== path)));
+          store.set(
+            "applications",
+            JSON.stringify(applications.filter((item) => item.path !== path))
+          );
           render();
         },
       },
@@ -40,51 +43,50 @@ function render(tray = mainTray) {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Add New Application',
+      label: "Add New Application",
       click: () => {
-        const result = dialog.showOpenDialog({ properties: ['openDirectory'] });
+        const result = dialog.showOpenDialog({ properties: ["openDirectory"] });
 
         if (!result) return;
 
         const [path] = result;
         const name = basename(path);
 
-        store.set(
-          'applications',
-          JSON.stringify([
-            ...applications,
-            {
-              path,
-              name,
-            },
-          ]),
-        );
+        setApplication({ path, name }, applications);
 
         render();
       },
     },
+    Separator,
     {
-      type: 'separator',
+      label: "Applications",
+      submenu: [...items],
+      enabled: applications.length > 0 ? true : false,
     },
-    ...items,
-    {
-      type: 'separator',
-    },
-    {
-      type: 'normal',
-      label: 'Close Tray',
-      role: 'quit',
-      enabled: true,
-    },
+    Separator,
+    Close,
   ]);
 
   tray.setContextMenu(contextMenu);
 
-  tray.on('click', tray.popUpContextMenu);
+  tray.on("click", tray.popUpContextMenu);
 }
 
-app.on('ready', () => {
-  mainTray = new Tray(resolve(__dirname, 'assets', 'iconTemplate.png'));
+app.on("ready", () => {
+  mainTray = new Tray(resolve(__dirname, "assets", "iconTemplate.png"));
 
   render(mainTray);
 });
+
+function setApplication(application, applications) {
+  return store.set(
+    "applications",
+    JSON.stringify([
+      ...applications,
+      {
+        path: application.path,
+        name: application.name,
+      },
+    ])
+  );
+}
