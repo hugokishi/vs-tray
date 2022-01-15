@@ -4,8 +4,11 @@ const Separator = require("./layouts/separator");
 const Close = require("./layouts/close");
 const { spawn } = require("child_process");
 const fixPath = require("fix-path");
+const {
+  removeApplication,
+  setApplication,
+} = require("./store/applicationStore");
 const { storeCreate } = require("./store");
-const fs = require("fs");
 
 fixPath();
 const store = storeCreate();
@@ -31,10 +34,7 @@ function render(tray = mainTray) {
       {
         label: "Remove Application",
         click: () => {
-          store.set(
-            "applications",
-            JSON.stringify(applications.filter((item) => item.path !== path))
-          );
+          removeApplication(applications, path);
           render();
         },
       },
@@ -52,7 +52,7 @@ function render(tray = mainTray) {
         const [path] = result;
         const name = basename(path);
 
-        setApplication({ path, name }, applications);
+        setApplication({ name, path }, applications);
 
         render();
       },
@@ -77,16 +77,3 @@ app.on("ready", () => {
 
   render(mainTray);
 });
-
-function setApplication(application, applications) {
-  return store.set(
-    "applications",
-    JSON.stringify([
-      ...applications,
-      {
-        path: application.path,
-        name: application.name,
-      },
-    ])
-  );
-}
