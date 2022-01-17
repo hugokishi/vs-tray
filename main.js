@@ -1,6 +1,8 @@
-const { resolve, basename } = require("path");
+const { join, resolve, basename } = require("path");
 const { app, Menu, Tray, dialog } = require("electron");
 const Separator = require("./layouts/separator");
+const { Docker } = require("node-docker-api");
+
 const Close = require("./layouts/close");
 const { spawn } = require("child_process");
 const fixPath = require("fix-path");
@@ -8,19 +10,26 @@ const {
   removeApplication,
   setApplication,
 } = require("./store/applicationStore");
+
 const { storeCreate } = require("./store");
+const path = require("path");
 
 fixPath();
 const store = storeCreate();
+const docker = new Docker({ socketPath: "/var/run/docker.sock" });
+
 let mainTray = {};
+
+const assetsDirectory = join(__dirname, "assets");
 
 if (app.dock) {
   app.dock.hide();
 }
 
-function render(tray = mainTray) {
+async function render(tray = mainTray) {
   const allApplications = store.get("applications");
   const applications = allApplications ? JSON.parse(allApplications) : [];
+  const containers = await docker.container.list({ all: true });
 
   const items = applications.map(({ name, path }) => ({
     label: name,
@@ -39,6 +48,22 @@ function render(tray = mainTray) {
         },
       },
     ],
+  }));
+
+  const dockerItems = containers.map((container, index) => ({
+    type: "normal",
+    label: `${container.data.Image}`,
+    icon: join(
+      assetsDirectory,
+      `${container.data.State === "running" ? "online" : "offline"}.png`
+    ),
+    click: async () => {
+      const containerIsRunning = container.data.State === "running";
+
+      containerIsRunning ? await container.stop() : await container.start();
+
+      render();
+    },
   }));
 
   const contextMenu = Menu.buildFromTemplate([
@@ -62,6 +87,19 @@ function render(tray = mainTray) {
       label: "Applications",
       submenu: [...items],
       enabled: applications.length > 0 ? true : false,
+    },
+    {
+      label: "Docker Containers",
+      submenu: [
+        {
+          label: "Refresh Container Status",
+          click: () => {
+            render();
+          },
+        },
+        Separator,
+        ...dockerItems,
+      ],
     },
     Separator,
     Close,
