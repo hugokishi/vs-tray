@@ -1,5 +1,5 @@
 # VS Tray
-## _Project Manager and Docker Containers
+## Project Manager and Docker Containers
 
 ## Features
 
