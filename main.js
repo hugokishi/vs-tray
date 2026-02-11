@@ -9,6 +9,7 @@ const fixPath = require("fix-path");
 const {
   removeApplication,
   setApplication,
+  loadInitialApps,
 } = require("./store/applicationStore");
 
 const { storeCreate } = require("./store");
@@ -37,7 +38,7 @@ async function render(tray = mainTray) {
       {
         label: "Open Application",
         click: () => {
-          spawn("code", [path], { shell: true });
+          spawn("antigravity", [path], { shell: true });
         },
       },
       {
@@ -111,6 +112,7 @@ async function render(tray = mainTray) {
 }
 
 app.on("ready", () => {
+  loadInitialApps();
   mainTray = new Tray(resolve(__dirname, "assets", "iconTemplate.png"));
 
   render(mainTray);

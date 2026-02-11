@@ -6,6 +6,10 @@ module.exports = {
       applications: {
         type: "string",
       },
+      initialLoadDone: {
+        type: "boolean",
+        default: false,
+      },
     };
 
     const store = new Store({ schema });
